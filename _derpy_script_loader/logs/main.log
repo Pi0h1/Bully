@@ -1,1 +1,3 @@
-[16:42:28] derpy's script loader: version 10 - dev
+[16:53:23] derpy's script loader: version 10 - dev
+[16:53:23] [ERROR] [MainMenu] Scripts/Main.lua requires system access (check DSL config)
+[16:53:23] [WARNING] System access is not allowed when networking is enabled.
