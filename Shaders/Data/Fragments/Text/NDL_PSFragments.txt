@@ -1,0 +1,588 @@
+//---------------------------------------------------------------------------
+// Emergent Xenon Default Pixel Shader Fragments
+//---------------------------------------------------------------------------
+// NOTE: Each fragment has the following form of a commented line as the
+// first line of the Code section:
+//    // <Name of fragment> ******************************
+// This is done to ease debugging - you can identify fragments in the watch 
+// window via the pointer to the fragment (the first line of code will 
+// display). 
+//---------------------------------------------------------------------------
+//PS Fragment - DarkMap
+//---------------------------------------------------------------------------
+PSFragment DarkMap
+<
+    ID = 0x00000001
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER DarkMapSampler : DARKMAP
+            REG Float4 PreLightAccum
+        >
+>
+{
+    "
+	// DarkMap **************************************************************
+    PreLightAccum += tex2D(DarkMapSampler, In.TexCoord##);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - LightMapX
+//---------------------------------------------------------------------------
+PSFragment LightMapX
+<
+    ID = 0x00000002
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER LightMapSampler## : LIGHTMAP##
+            REG Float4 PreLightAccum
+        >
+>
+{
+    "
+	// LightMapX ************************************************************
+    PreLightAccum += tex######(LightMapSampler##, In.TexCoord##);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment NoDarkMapOrLightMaps
+//---------------------------------------------------------------------------
+PSFragment NoDarkMapOrLightMaps
+<
+    ID = 0x00000004
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4 PreLightAccum
+        >
+>
+{
+    "
+	// NoDarkMapOrLightMaps *************************************************
+    PreLightAccum = float4(1.0, 1.0, 1.0, 1.0);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - DetailMap
+//---------------------------------------------------------------------------
+PSFragment DetailMap
+<
+    ID = 0x00000008
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER DetailMapSampler : DETAILMAP
+            REG Float4 PreLightAccum
+        >
+>
+{
+    "
+	// DetailMap ************************************************************
+    float4 DetailMap = tex2D(DetailMapSampler, In.TexCoord##);
+    PreLightAccum *= DetailMap * 2.0;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - BaseMap
+//---------------------------------------------------------------------------
+PSFragment BaseMap
+<
+    ID = 0x00000010
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER BaseMapSampler : BASEMAP
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// BaseMapApplyReplaceNoDetailMap ***************************************
+    ColorAccum = tex2D(BaseMapSampler, In.TexCoord##);
+    ColorAccum.rgb *= PreLightAccum;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - NoBaseMap
+//---------------------------------------------------------------------------
+PSFragment NoBaseMap
+<
+    ID = 0x00000020
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4 PreLightAccum
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// NoBaseMap ************************************************************
+    ColorAccum = PreLightAccum;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - DecalMapX
+//---------------------------------------------------------------------------
+PSFragment DecalMapX
+<
+    ID = 0x00000100
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER DecalMapSampler## : DECALMAP##
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// DecalMapX ************************************************************
+    float4 DecalMap## = tex2D(DecalMapSampler##, In.TexCoord##);
+    ColorAccum.rgb = lerp(ColorAccum.rgb, DecalMap##.rgb, DecalMap##.a);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - ShadowMapX
+//---------------------------------------------------------------------------
+PSFragment ShadowMapX
+<
+    ID = 0x00001000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER ShadowMapSampler## : SHADOWMAP##
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+    // ShadowMapX ***********************************************************
+    float4 ShadowMap## = tex######(ShadowMapSampler##, In.TexCoord##);
+    ColorAccum.rgb *= ShadowMap##;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - VertexColorModulate
+//---------------------------------------------------------------------------
+PSFragment VertexColorModulate
+<
+    ID = 0x00004000
+    inputs = 
+        <
+            float4 Diffuse : COLOR0
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// VertexColorModulate **************************************************
+    ColorAccum *= In.Diffuse;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - VertexColorReplace
+//---------------------------------------------------------------------------
+PSFragment VertexColorReplace
+<
+    ID = 0x00008000
+    inputs = 
+        <
+            float4 Diffuse : COLOR0
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// VertexColorReplace ***************************************************
+    ColorAccum = In.Diffuse;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - GlossMap
+//---------------------------------------------------------------------------
+PSFragment GlossMap
+<
+    ID = 0x00010000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER GlossMapSampler : GLOSSMAP
+            REG Float4 GlossMap
+        >
+>
+{
+    "
+	// GlossMap *************************************************************
+    GlossMap = tex2D(GlossMapSampler, In.TexCoord##);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - BumpMap
+//---------------------------------------------------------------------------
+PSFragment BumpMap
+<
+    ID = 0x00020000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER BumpMapSampler : BUMPMAP
+            REG Float4 BumpMap
+        >
+>
+{
+    "
+	// BumpMap *************************************************************
+    BumpMap = tex2D(BumpMapSampler, In.TexCoord##);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - SphereMap
+//---------------------------------------------------------------------------
+PSFragment SphereMap
+<
+    ID = 0x00100000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER SphereMapSampler : SPHEREMAP
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// SphereMap ************************************************************
+    float4 EnvMap = tex######(SphereMapSampler, In.TexCoord##);
+    ColorAccum.rgb += EnvMap.rgb;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - SphereMapWithGloss
+//---------------------------------------------------------------------------
+PSFragment SphereMapWithGloss
+<
+    ID = 0x00200000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER SphereMapSampler : SPHEREMAP
+            REG Float4 ColorAccum
+            REG Float4 GlossMap
+        >
+>
+{
+    "
+	// SphereMapWithGloss ***************************************************
+    float4 EnvMap = tex######(SphereMapSampler, In.TexCoord##);
+    ColorAccum.rgb += EnvMap.rgb * GlossMap.rgb;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - SphereMapWithBump
+//---------------------------------------------------------------------------
+PSFragment SphereMapWithBump
+<
+    ID = 0x00400000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER SphereMapSampler : SPHEREMAP
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// SphereMapWithBump ****************************************************
+    float4 SphereSampleCoords = In.TexCoord##;
+    SphereSampleCoords.xy += BumpMap.rg;
+    ColorAccum.rgb += tex######(SphereMapSampler, SphereSampleCoords);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - SphereMapWithBumpAndGloss
+//---------------------------------------------------------------------------
+PSFragment SphereMapWithBumpAndGloss
+<
+    ID = 0x00800000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER SphereMapSampler : SPHEREMAP
+            REG Float4 ColorAccum
+            REG Float4 GlossMap
+        >
+>
+{
+    "
+	// SphereMapWithBumpAndGloss ********************************************
+    float4 SphereSampleCoords = In.TexCoord##;
+    SphereSampleCoords.xy += BumpMap.rg;
+    float4 EnvMap = tex######(SphereMapSampler, SphereSampleCoords);
+    ColorAccum.rgb += EnvMap.rgb * GlossMap.rgb;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - GlowMap
+//---------------------------------------------------------------------------
+PSFragment GlowMap
+<
+    ID = 0x01000000
+    inputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER GlowMapSampler : GLOWMAP
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// GlowMap **************************************************************
+    ColorAccum.rgb += tex2D(GlowMapSampler, In.TexCoord##);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - SpecularColorAdd
+//---------------------------------------------------------------------------
+PSFragment SpecularColorAdd
+<
+    ID = 0x02000000
+    inputs = 
+        <
+            float4  Specular : COLOR1
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// SpecularColorAdd *****************************************************
+    ColorAccum.rgb += In.Specular.rgb;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - FogMap
+//---------------------------------------------------------------------------
+PSFragment FogMap
+<
+    ID = 0x04000000
+    inputs = 
+        <
+            float4  TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            SAMPLER FogMapSampler : FOGMAP
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// FogMap ***************************************************************
+	float4 Fog = tex######(FogMapSampler, In.TexCoord##);
+    ColorAccum.rgb = lerp(ColorAccum.rgb, Fog.rgb, Fog.a);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - Fog
+//---------------------------------------------------------------------------
+PSFragment Fog
+<
+    ID = 0x08000000
+    inputs = 
+        <
+            float4 Specular : COLOR1
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  FogColor : FOGCOLOR 
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+	// Fog ******************************************************************
+    ColorAccum.rgb = lerp(ColorAccum.rgb, FogColor.rgb, In.Specular.a);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - WriteDiffColor
+//---------------------------------------------------------------------------
+PSFragment WriteDiffColor
+<
+    ID = 0x10000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+			float4 Diffuse : COLOR0
+        >
+    variables = 
+        <
+            REG Float4 ColorAccum
+        >
+>
+{
+    "
+	// WriteDiffColor *******************************************************
+    Out.Diffuse = ColorAccum;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//PS Fragment - WriteSpecColor
+//---------------------------------------------------------------------------
+PSFragment WriteSpecColor
+<
+    ID = 0x20000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+			float4 Specular : COLOR1
+        >
+    variables = 
+        <
+            REG Float4 SpecAccum
+        >
+>
+{
+    "
+	// WriteSpecColor *******************************************************
+    Out.Specular = SpecAccum;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------

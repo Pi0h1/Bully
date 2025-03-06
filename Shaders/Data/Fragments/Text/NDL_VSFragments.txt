@@ -1,0 +1,760 @@
+//---------------------------------------------------------------------------
+// Emergent Xenon Default Vertex Shader Fragments
+//---------------------------------------------------------------------------
+// NOTE: Each fragment has the following form of a commented line as the
+// first line of the Code section:
+//    // <Name of fragment> ******************************
+// This is done to ease debugging - you can identify fragments in the watch 
+// window via the pointer to the fragment (the first line of code will 
+// display). 
+//---------------------------------------------------------------------------
+//VS Fragment - TransformPosition
+//---------------------------------------------------------------------------
+VSFragment TransformPosition
+<
+    ID = 0x00000001
+    inputs = 
+        <
+            float3 Position : POSITION0
+            float3 Normal   : NORMAL
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  World : WORLD
+            REG Float4  WorldPos
+            REG Float3  WorldNrm
+        >
+>
+{
+    "
+    // TransformPosition ****************************************************
+    // Transform the position into world space.
+    WorldPos = mul(float4(In.Position, 1.0), World);
+    WorldNrm = mul(In.Normal, (float3x3)World);
+    WorldNrm = normalize(WorldNrm);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - TransformSkinnedPosition
+//---------------------------------------------------------------------------
+VSFragment TransformSkinnedPosition
+<
+    ID = 0x00000002
+    inputs = 
+        <
+            float3  Position         : POSITION0
+            float4	BlendIndices     : BLENDINDICES0
+            float4  BlendWeights     : BLENDWEIGHTS0
+            float3  Normal           : NORMAL
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  Bones : SKINBONEMATRIX4
+            REG Float4  WorldPos
+            REG Float3  WorldNrm
+        >
+>
+{
+    "
+    // TransformSkinnedPosition *********************************************
+    // Transform the skinned position into world space
+    // Calculate the normalized fourth bone weight
+
+    // Composite the skinning transform which will take the vertex
+    // and normal to world space.
+    float4x4 SkinBoneTransform;
+    SkinBoneTransform  = Bones[In.BlendIndices[0]] * In.BlendWeights[0];
+    SkinBoneTransform += Bones[In.BlendIndices[1]] * In.BlendWeights[1];
+    SkinBoneTransform += Bones[In.BlendIndices[2]] * In.BlendWeights[2];
+    SkinBoneTransform += Bones[In.BlendIndices[3]] * In.BlendWeights[3];
+
+    // Transform into world space.
+	WorldPos = mul(float4(In.Position, 1.0f), SkinBoneTransform);
+    WorldNrm = mul(In.Normal, (float3x3)SkinBoneTransform);
+    WorldNrm = normalize(WorldNrm);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - ProjectWorldPosition
+//---------------------------------------------------------------------------
+VSFragment ProjectWorldPosition
+<
+    ID = 0x00000004
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 Position : POSITION
+        >
+    variables = 
+        <
+            CM_Defined  ViewProj : VIEWPROJ
+            REG Float4  WorldPos
+        >
+>
+{
+    "
+    // ProjectWorldPosition *************************************************
+    // Project the world position into clip space.
+    Out.Position = mul (WorldPos, ViewProj);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - OutputWorldPosition
+//---------------------------------------------------------------------------
+VSFragment OutputWorldPosition
+<
+    ID = 0x00000008
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 Position : POSITION
+        >
+    variables = 
+        <
+            REG Float4  WorldPos
+        >
+>
+{
+    "
+    // OutputWorldPosition **************************************************
+    // Copy the WorldPos into the output Position.
+    Out.Position = WorldPos;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadVCIgnore
+//---------------------------------------------------------------------------
+VSFragment LoadVCIgnore
+<
+    ID = 0x00000010
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  MatAmbient : MATERIALAMBIENT
+            CM_Defined  MatDiffuse : MATERIALDIFFUSE
+            CM_Defined  MatEmissive : MATERIALEMISSIVE
+            REG Float4  LightMatAmb
+            REG Float4  LightMatDiff
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+    // LoadVCIgnore *********************************************************
+    // Load material colors, NiVertexColorProperty::SOURCE_IGNORE.
+    LightMatAmb = MatAmbient;
+    LightMatDiff = MatDiffuse;
+    ColorAccum = MatEmissive;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadVCEmissive
+//---------------------------------------------------------------------------
+VSFragment LoadVCEmissive
+<
+    ID = 0x00000020
+    inputs = 
+        <
+            float4 Color : COLOR0
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  MatAmbient : MATERIALAMBIENT
+            CM_Defined  MatDiffuse : MATERIALDIFFUSE
+            REG Float4  LightMatAmb
+            REG Float4  LightMatDiff
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+    // LoadVCEmissive *******************************************************
+    // Load material colors, NiVertexColorProperty::SOURCE_EMISSIVE.
+    LightMatAmb = MatAmbient;
+    LightMatDiff = MatDiffuse;
+    ColorAccum = In.Color;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadVCAmbDiff
+//---------------------------------------------------------------------------
+VSFragment LoadVCAmbDiff
+<
+    ID = 0x00000040
+    inputs = 
+        <
+            float4 Color : COLOR0
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  MatEmissive : MATERIALEMISSIVE
+            REG Float4  LightMatAmb
+            REG Float4  LightMatDiff
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+    // LoadVCAmbDiff ********************************************************
+    // Load material colors, NiVertexColorProperty::SOURCE_AMB_DIFF.
+    LightMatAmb = In.Color;
+    LightMatDiff = In.Color;
+    ColorAccum.xyz = MatEmissive;
+    ColorAccum.w = In.Color.w;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - SetupLightingVariables
+//---------------------------------------------------------------------------
+VSFragment SetupLightingVariables
+<
+    ID = 0x00000100
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4  SpecAccum
+            REG Float4  ColorAccum
+            REG Float4  WorldPos
+            REG Float3  WorldViewVector
+            CM_Defined  CameraPosition : CAMERAPOSITION
+        >
+>
+{
+    "
+    // SetupLightingVariables ***********************************************
+    // Declare common variables used for lighting
+    float Length;
+    float Attenuate;
+    float CosAlpha;
+
+	// SpecAccum and ColorAccum are set to 0.0 at their declaration by
+	// the text shader linker.
+	
+    // Calculate WorldViewVector for later.
+    WorldViewVector = CameraPosition - WorldPos;
+    WorldViewVector = normalize(WorldViewVector);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LightX
+//---------------------------------------------------------------------------
+VSFragment LightX
+<
+    ID = 0x00000200
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    // This list presumes that LIGHT## will be declared as:
+    // float4 Light##[6] = 
+    //     { Pos,
+    //       Dir,
+    //       Diffuse,
+    //       Specular,
+    //       Attenuation,
+    //       SpotAttenuation };
+    //
+    // #define or const int statements will be used to make indexing legible.
+    // e.g. - #define LIGHT_Ambient 2
+    //
+    // Attenuation is defined as (const, linear, quad, range).
+    // Range is not implemented at this time.
+    //
+    // SpotAttenuation is stored as (cos(theta/2), cos(phi/2), falloff)
+    // theta is the angle of the inner cone and phi is the angle of the outer
+    // cone in the traditional DX manner. Gamebryo only allows setting of
+    // phi, so cos(theta/2) will typically be cos(0) or 1. To disable spot
+    // effects entirely, set cos(theta/2) and cos(phi/2) to -1 or lower.
+    variables = 
+        <
+            CM_Defined  Light## : LIGHT##
+            CM_Defined  MatSpecular : MATERIALSPECULAR
+            CM_Defined  MatPower : MATERIALPOWER
+            REG Float4  LightMatDiff
+            REG Float4  WorldPos
+            REG Float3  WorldNrm
+            REG Float4  ColorAccum
+            REG Float4  SpecAccum
+            REG Float3  WorldViewVector
+        >
+>
+{
+    "
+    // LightX ***************************************************************
+    // Perform lighting calculations for light ##.
+
+    // Get the world space light vector.
+    float3 LightVector## = Light##[LIGHT_Pos] - WorldPos;
+    Length = length(LightVector##);
+    LightVector## = LightVector## / Length;
+
+    // Take N dot L as intensity.
+    float LightNDotL## = dot(LightVector##, WorldNrm);
+    float LightIntensity## = max(0, LightNDotL##);
+
+    // Attenuate Here
+    Attenuate.x = Light##[LIGHT_Attenuation].x +
+        Light##[LIGHT_Attenuation].y * Length +
+        Light##[LIGHT_Attenuation].z * Length * Length;
+    Attenuate.x = max(1, Attenuate.x);
+    Attenuate.x = 1.0 / Attenuate.x;
+
+    // Get intensity as cosine of light vector and direction.
+    CosAlpha.x = dot(-LightVector##, Light##[LIGHT_Dir]);
+
+    // Subtract out outer cone angle.
+    CosAlpha.x = smoothstep(Light##[LIGHT_SpotAttenuation].y,
+        Light##[LIGHT_SpotAttenuation].x, CosAlpha.x);
+
+    // Power to falloff.
+    CosAlpha.x = pow(CosAlpha.x, Light##[LIGHT_SpotAttenuation].z).x;
+
+    // Multiply the spot attenuation into the overall attenuation.
+    Attenuate.x *= CosAlpha.x;
+
+    LightIntensity## = LightIntensity## * Attenuate.x;
+
+    // Determine the interaction of diffuse color of light and material.
+    // Scale by the attenuated intensity.
+    ColorAccum.rgb += LightIntensity## *
+        (LightMatDiff * Light##[LIGHT_Diffuse]);
+
+    // Get the half vector.
+    float3 LightHalfVector## = LightVector## + WorldViewVector;
+    LightHalfVector## = normalize(LightHalfVector##);
+
+    // Determine specular intensity.
+    float LightNDotH## = max(0, dot(LightHalfVector##, WorldNrm));
+    float LightSpecIntensity## = pow(LightNDotH##, MatPower).x;
+    if (LightNDotL## < 0.0)
+        LightSpecIntensity## = 0.0;
+
+    // Attenuate Here
+    LightSpecIntensity## = LightSpecIntensity## * Attenuate;
+    
+    // Determine the interacation of specular color of light and material.
+    // Scale by the attenuated intensity.
+    SpecAccum.rgb += MatSpecular *
+        (LightSpecIntensity## * Light##[LIGHT_Specular]);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - AmbientLight
+//---------------------------------------------------------------------------
+VSFragment AmbientLight
+<
+    ID = 0x00000400
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            CM_Defined  AmbientLightColor : AMBIENTLIGHTCOLOR
+            REG Float4  LightMatAmb
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+    // AmbientLight *********************************************************
+    // Perform lighting calculations for all ambient lights.
+
+    // Add in the ambient contribution for the lights.
+    ColorAccum.rgb += LightMatAmb * AmbientLightColor;
+
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadTexGenInputTexCoord
+//---------------------------------------------------------------------------
+VSFragment LoadTexGenInputTexCoord
+<
+    ID = 0x00001000
+    inputs = 
+        <
+            float2 TexCoord## : TEXCOORD##
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+        >
+>
+{
+    "
+    // LoadTexGenInputTexCoord **********************************************
+    TexCoordInput##.xy = In.TexCoord##;
+    TexCoordInput##.z = 0.0f;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadTexGenInputWorldNrm
+//---------------------------------------------------------------------------
+VSFragment LoadTexGenInputWorldNrm
+<
+    ID = 0x00002000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+            REG Float3  WorldNrm
+        >
+>
+{
+    "
+    // LoadTexGenInputWorldNrm **********************************************
+    TexCoordInput## = WorldNrm;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadTexGenInputWorldPos
+//---------------------------------------------------------------------------
+VSFragment LoadTexGenInputWorldPos
+<
+    ID = 0x00004000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+            REG Float4  WorldPos
+        >
+>
+{
+    "
+    // LoadTexGenInputWorldPos **********************************************
+    TexCoordInput## = WorldPos.xyz;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - LoadTexGenInputWorldReflect
+//---------------------------------------------------------------------------
+VSFragment LoadTexGenInputWorldReflect
+<
+    ID = 0x00008000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+            REG Float4  WorldPos
+            REG Float3  WorldNrm
+            REG Float3  WorldViewVector
+            CM_Defined  CameraPosition : CAMERAPOSITION
+        >
+>
+{
+    "
+    // LoadTexGenInputWorldReflect ******************************************
+    // Calculate WorldViewVector.
+    WorldViewVector = CameraPosition - WorldPos;
+    WorldViewVector = normalize(WorldViewVector);
+
+    float NDotV = dot(WorldNrm, WorldViewVector);
+    NDotV *= 2.0;
+    float3 Reflect = WorldNrm * NDotV;
+
+    TexCoordInput## = Reflect - WorldViewVector;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - OutputTexGenPassThrough
+//---------------------------------------------------------------------------
+VSFragment OutputTexGenPassThrough
+<
+    ID = 0x00010000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+        >
+>
+{
+    "
+    // OutputTexGenPassThrough **********************************************
+    Out.TexCoord##.xyz = TexCoordInput##;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - OutputTexGenTransform
+//---------------------------------------------------------------------------
+VSFragment OutputTexGenTransform
+<
+    ID = 0x00020000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+            CM_Defined  TexCoordTransform## : TEXTRANS##
+        >
+>
+{
+    "
+    // OutputTexGenTransform ************************************************
+    Out.TexCoord##.x = dot(TexCoordTransform##[0], 
+        float4(TexCoordInput##, 1.0));
+    Out.TexCoord##.y = dot(TexCoordTransform##[1], 
+        float4(TexCoordInput##, 1.0));
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - OutputTexGenTransformProjected
+//---------------------------------------------------------------------------
+VSFragment OutputTexGenTransformProjected
+<
+    ID = 0x00040000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 TexCoord## : TEXCOORD##
+        >
+    variables = 
+        <
+            REG Float3  TexCoordInput##
+            CM_Defined  TexCoordTransform## : TEXTRANS##
+        >
+>
+{
+    "
+    // OutputTexGenTransformProjected ***************************************
+    float3 TexCoordOutput## = mul(TexCoordTransform##, 
+        float4(TexCoordInput##, 1.0));
+    Out.TexCoord##.xyzw = TexCoordOutput##.xyzz;
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - FogLinear
+//---------------------------------------------------------------------------
+VSFragment FogLinear
+<
+    ID = 0x01000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    // FogParams is assumed to be ((1 - GbStart), 1/GBStart,
+    // Normalization Factor)
+    // In Gamebryo, the end value is always 1, so we don't have to
+    // implement the full DX functions. Normalization Factor is 
+    // 1 over the distance of the far plane in world space units.
+    // This allows us to perform range based fogging without any crazy
+    // transform stuff going on. GBStart is 1.0 for the near plane and
+    // 0.0 for the far plane. If GBStart is 0.0, then 1/GBStart is 
+    // arbitrarily set to a large value by the pipeline.
+    // Unlike DX fog, the value output is the percentage of fog color.
+    // a value of 1.0 or higher means only fog is shown.
+    variables = 
+        <
+            REG Float4  WorldPos
+            REG Float4  SpecAccum
+            CM_Defined  CameraPosition : CAMERAPOSITION
+            CM_Defined  FogParams : FOGPARAMETERS
+        >
+>
+{
+    "
+    // FogLinear ************************************************************
+    // Linear fog calculation
+    // Get Range
+    float Distance = distance(WorldPos, CameraPosition);
+
+    // Normalize into the 0 to 1 range. Points near the edge of the screen
+    // may exceed 1, but that is acceptable.
+    Distance *= FogParams.z;
+
+    // Scale back so that anything before GBStart is unfogged.
+    float Fog = Distance - FogParams.x;
+
+    // Scale fog in fogged range from 0 to 1.
+    Fog *= FogParams.y;
+
+    // Clamp to max fog value
+    Fog = min(FogParams.w, Fog);
+
+    // Make sure we don't get negative fog for objects prior to GBStart
+    SpecAccum.a = max(0, Fog);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - FogSquared
+//---------------------------------------------------------------------------
+VSFragment FogSquared
+<
+    ID = 0x02000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+        >
+    variables = 
+        <
+            REG Float4  WorldPos
+            REG Float4  SpecAccum
+            CM_Defined  CameraPosition : CAMERAPOSITION
+            CM_Defined  FogParams : FOGPARAMETERS
+        >
+>
+{
+    "
+    // FogSquared ***********************************************************
+    // Squared fog calculation
+    // Get Range
+    float Distance = distance(WorldPos, CameraPosition);
+
+    // Normalize into the 0 to 1 range. Points near the edge of the screen
+    // may exceed 1, but that is acceptable.
+    Distance *= FogParams.z;
+
+    // Square the range.
+    Distance *= Distance;
+
+    // Scale back so that anything before GBStart is unfogged.
+    float Fog = Distance - FogParams.x;
+
+    // Scale fog in fogged range from 0 to 1.
+    Fog *= FogParams.y;
+    
+    // Clamp to max fog value
+    Fog = min(FogParams.w, Fog);
+
+    // Make sure we don't get negative fog for objects prior to GBStart
+    SpecAccum.a = max(0, Fog);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - WriteColDiff
+//---------------------------------------------------------------------------
+VSFragment WriteColDiff
+<
+    ID = 0x10000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 Diffuse : COLOR0
+        >
+    variables = 
+        <
+            REG Float4  ColorAccum
+        >
+>
+{
+    "
+    // WriteColDiff *********************************************************
+    // Write out diffuse color for pixel shader.
+    Out.Diffuse = saturate(ColorAccum);
+    //***********************************************************************
+    "
+}
+//---------------------------------------------------------------------------
+//VS Fragment - WriteColSpecDiff
+//---------------------------------------------------------------------------
+VSFragment WriteColSpecDiff
+<
+    ID = 0x20000000
+    inputs = 
+        <
+        >
+    outputs = 
+        <
+            float4 Diffuse : COLOR0
+            float4 Specular : COLOR1
+        >
+    variables = 
+        <
+            REG Float4  ColorAccum
+            REG Float4  SpecAccum
+        >
+>
+{
+    "
+    // WriteColSpecDiff *****************************************************
+    // Write out the diffuse and specular color for the pixel shader.
+    Out.Diffuse = saturate(ColorAccum);
+    Out.Specular = saturate(SpecAccum);
+    //***********************************************************************
+    "
+}
